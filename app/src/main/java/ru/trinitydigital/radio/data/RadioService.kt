@@ -12,9 +12,8 @@ class RadioService : Service() {
     private val binder by lazy { RadioBinder() }
     private val player by inject { mediaPlayer }
 
-    override fun onCreate() {
-        super.onCreate()
-        player.play("https://www.last.fm/music/Cher/Believe")
+    fun play(station: String) {
+        player.play(station)
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -38,6 +37,6 @@ class RadioService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.d("onDestroy")
+        player.pause()
     }
 }

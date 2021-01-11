@@ -2,6 +2,7 @@ package ru.trinitydigital.radio.util
 
 import android.content.Context
 import android.net.Uri
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -9,73 +10,70 @@ import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import timber.log.Timber
+import javax.inject.Inject
 
 interface MediaPlayer {
     fun play(url: String)
+    fun pause()
+    fun stop()
     fun getExoPlayer(): ExoPlayer
 }
 
-class MediaPlayerImpl(private val context: Context) : MediaPlayer {
+class MediaPlayerImpl(private val context: Context) : MediaPlayer, Player.EventListener {
 
-    private lateinit var exoMediaPlayer: ExoPlayer
+    private lateinit var exoMediaPlayer: SimpleExoPlayer
     private lateinit var mediaSession: MediaSessionCompat
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
+    private lateinit var transportControl: MediaControllerCompat.TransportControls
 
     init {
         initializeMediaSession()
         initializePlayer()
     }
 
-
     override fun play(url: String) {
-        val userAgent = Util.getUserAgent(
-            context,
-            context.getString(R.string.exo_controls_rewind_description)
-        )
+        val dataSourceFactory =
+            DefaultDataSourceFactory(context, Util.getUserAgent(context, "dasdsad"))
 
-        val httpDataSourceFactory = DefaultHttpDataSourceFactory(
-            userAgent,
-            null /* listener */,
-            DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-            DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
-            true /* allowCrossProtocolRedirects */
-        )
-
-        val mediaSource = ExtractorMediaSource.Factory(
-            DefaultDataSourceFactory(
-                context,
-                null,
-                httpDataSourceFactory
-            )
-        )
+        val mediaSource = ExtractorMediaSource.Factory(dataSourceFactory)
             .setExtractorsFactory(DefaultExtractorsFactory())
             .createMediaSource(Uri.parse(url))
 
         exoMediaPlayer.prepare(mediaSource)
-
         exoMediaPlayer.playWhenReady = true
+    }
 
-        exoMediaPlayer.addListener(listener)
+    override fun pause() {
+        exoMediaPlayer.playWhenReady = false
+    }
 
+    override fun stop() {
+        exoMediaPlayer.stop()
     }
 
     override fun getExoPlayer(): ExoPlayer {
-
         return exoMediaPlayer
     }
 
     private fun initializePlayer() {
-        val trackSelector = DefaultTrackSelector()
-        val loadControl = DefaultLoadControl()
-        val renderersFactory = DefaultRenderersFactory(context)
+
+        val bandwidthMeter = DefaultBandwidthMeter()
+        val trackSelectorFactory = AdaptiveTrackSelection.Factory(bandwidthMeter)
+        val trackSelector = DefaultTrackSelector(trackSelectorFactory)
+
         exoMediaPlayer =
-            ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector, loadControl)
+            ExoPlayerFactory.newSimpleInstance(context, trackSelector)
+
+        exoMediaPlayer.addListener(this)
     }
 
     private fun initializeMediaSession() {
@@ -97,54 +95,70 @@ class MediaPlayerImpl(private val context: Context) : MediaPlayer {
 
         mediaSession.setPlaybackState(stateBuilder.build())
 
-//        mediaSession.setCallback(SessionCallback())
+        mediaSession.setCallback(callBack)
 
         mediaSession.isActive = true
     }
 
-    val listener = object : Player.EventListener {
-        override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-            Log.d("adsasdsad", "asdsadsad")
+    private val callBack = object : MediaSessionCompat.Callback() {
+
+        override fun onPause() {
+            super.onPause()
+            Timber.d("asdasdasd")
         }
 
-        override fun onTracksChanged(
-            trackGroups: TrackGroupArray?,
-            trackSelections: TrackSelectionArray?
-        ) {
-            Log.d("adsasdsad", "asdsadsad")
+        override fun onStop() {
+            super.onStop()
+            Timber.d("asdasdasd")
         }
 
-        override fun onLoadingChanged(isLoading: Boolean) {
-            Log.d("adsasdsad", "asdsadsad")
+        override fun onPlay() {
+            super.onPlay()
+            Timber.d("asdasdasd")
         }
-
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onRepeatModeChanged(repeatMode: Int) {
-                    Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onPlayerError(error: ExoPlaybackException?) {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onPositionDiscontinuity(reason: Int) {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
-        override fun onSeekProcessed() {
-            Log.d("adsasdsad", "asdsadsad")
-        }
-
     }
+
+    override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onTracksChanged(
+        trackGroups: TrackGroupArray?,
+        trackSelections: TrackSelectionArray?
+    ) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onLoadingChanged(isLoading: Boolean) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onRepeatModeChanged(repeatMode: Int) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onPlayerError(error: ExoPlaybackException?) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onPositionDiscontinuity(reason: Int) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
+        Timber.d("asdasdasd")
+    }
+
+    override fun onSeekProcessed() {
+        Timber.d("asdasdasd")
+    }
+
 }
