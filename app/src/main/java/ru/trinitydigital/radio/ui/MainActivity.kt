@@ -6,12 +6,10 @@ import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
-import androidx.lifecycle.Observer
 import ru.trinitydigital.radio.data.RadioService
 import ru.trinitydigital.radio.data.RadioStations
-import ru.trinitydigital.radio.data.Resources
+import ru.trinitydigital.radio.data.RadioStationsRepository
 import ru.trinitydigital.radio.databinding.ActivityMainBinding
-import ru.trinitydigital.radio.util.forceRefresh
 import ru.trinitydigital.radio.util.viewBinding
 import ru.trinitydigital.radio.util.viewModel
 import timber.log.Timber
@@ -24,11 +22,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var serviceConnection: ServiceConnection
     private val intentService by lazy { Intent(this, RadioService::class.java) }
     private var radioService: RadioService? = null
+    private var radio: RadioStations? = null
 
     private val adapter by lazy {
         RadioAdapter {
+            radio = it
             bindService(intentService, serviceConnection, BIND_AUTO_CREATE)
-            viewModel.radioLiveData.postValue(it)
+            radioService?.chooseRadio(it)
             viewModel.isBound = true
         }
     }
@@ -39,19 +39,17 @@ class MainActivity : AppCompatActivity() {
         setupServiceConnection()
         setupListeners()
         setupRecyclerView()
-        setupViewModel()
     }
 
-    private fun setupViewModel() {
-        viewModel.radioLiveData.observe(this, {
-            if (viewModel.isBound) radioService?.play(it.station)
+    private fun setupRadio() {
+        radioService?.getActiveStation()?.observe(this, {
             binding.viewPlayer.tvTitle.text = it.name
         })
     }
 
     private fun setupRecyclerView() {
         binding.rvRadio.adapter = adapter
-        adapter.update(viewModel.radioList)
+        adapter.update(RadioStationsRepository.radioList)
     }
 
     private fun setupServiceConnection() {
@@ -60,7 +58,8 @@ class MainActivity : AppCompatActivity() {
                 Timber.d("onServiceConnected")
                 viewModel.isBound = true
                 radioService = (service as RadioService.RadioBinder).getService()
-                viewModel.radioLiveData.forceRefresh()
+                setupRadio()
+                radioService?.chooseRadio(radio ?: RadioStationsRepository.radioList[0])
                 binding.viewPlayer.imgPlayPause.isActivated = true
             }
 
@@ -86,11 +85,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.viewPlayer.btnNext.setOnClickListener {
-            viewModel.nextStation()
+            radioService?.nextRadio()
         }
 
         binding.viewPlayer.btnPrev.setOnClickListener {
-            viewModel.prevStation()
+            radioService?.prevRadio()
         }
     }
 

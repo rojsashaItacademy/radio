@@ -4,10 +4,10 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
-import android.util.Log
-import ru.trinitydigital.radio.data.enums.NotificationClickTypes
+import androidx.lifecycle.MutableLiveData
 import ru.trinitydigital.radio.data.enums.NotificationClickTypes.*
 import ru.trinitydigital.radio.di.inject
+import ru.trinitydigital.radio.ui.MainViewModel
 import ru.trinitydigital.radio.util.NotificationUtils
 import timber.log.Timber
 
@@ -15,6 +15,8 @@ class RadioService : Service() {
 
     private val binder by lazy { RadioBinder() }
     private val player by inject { mediaPlayer }
+    private val radioStations by inject { radioStations }
+    private lateinit var viewModel: MainViewModel
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         handleClicks(intent?.action)
@@ -24,19 +26,36 @@ class RadioService : Service() {
     private fun handleClicks(type: String?) {
         when (type) {
             NEXT.name -> {
-
+                nextRadio()
             }
             PLAY.name -> {
-
+                play(radioStations.radioLiveData.value)
             }
             PREV.name -> {
-
+                prevRadio()
             }
         }
     }
 
-    fun play(station: String) {
-        player.play(station)
+    fun chooseRadio(station: RadioStations?) {
+        radioStations.radioLiveData.postValue(station)
+        play(station)
+    }
+
+    fun nextRadio() {
+        play(radioStations.nextStation())
+    }
+
+    fun prevRadio() {
+        play(radioStations.prevStation())
+    }
+
+    private fun play(station: RadioStations?) {
+        station?.station?.let { player.play(it) }
+    }
+
+    fun getActiveStation(): MutableLiveData<RadioStations> {
+        return radioStations.radioLiveData
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -61,6 +80,10 @@ class RadioService : Service() {
     override fun onUnbind(intent: Intent?): Boolean {
         Timber.d("onUnbind")
         return super.onUnbind(intent)
+    }
+
+    fun setupViewModel(viewModel: MainViewModel) {
+        this.viewModel = viewModel
     }
 
     override fun onDestroy() {
