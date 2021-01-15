@@ -39,7 +39,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
-
         <ImageView
             android:id="@+id/imgNext"
             android:layout_width="wrap_content"
@@ -50,8 +49,6 @@
             app:layout_constraintStart_toEndOf="@+id/imgPlay"
             app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
 
-
     </LinearLayout>
-
 
 </LinearLayout>

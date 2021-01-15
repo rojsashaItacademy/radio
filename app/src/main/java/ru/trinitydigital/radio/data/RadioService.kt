@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import ru.trinitydigital.radio.data.enums.NotificationClickTypes
+import ru.trinitydigital.radio.data.enums.NotificationClickTypes.*
 import ru.trinitydigital.radio.di.inject
 import ru.trinitydigital.radio.util.NotificationUtils
 import timber.log.Timber
@@ -15,8 +17,22 @@ class RadioService : Service() {
     private val player by inject { mediaPlayer }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        handleClicks(intent?.action)
         return super.onStartCommand(intent, flags, startId)
-        Log.d("Adasdasdasd", "Adadasdasdasdasd")
+    }
+
+    private fun handleClicks(type: String?) {
+        when (type) {
+            NEXT.name -> {
+
+            }
+            PLAY.name -> {
+
+            }
+            PREV.name -> {
+
+            }
+        }
     }
 
     fun play(station: String) {

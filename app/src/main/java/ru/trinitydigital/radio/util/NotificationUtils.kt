@@ -12,20 +12,30 @@ import androidx.core.app.NotificationCompat
 import ru.trinitydigital.radio.BuildConfig
 import ru.trinitydigital.radio.R
 import ru.trinitydigital.radio.data.RadioService
-import ru.trinitydigital.radio.data.RadioStations
+import ru.trinitydigital.radio.data.enums.NotificationClickTypes
 
 object NotificationUtils {
 
     private const val CHANNEL_ID = "CHANNEL_ID"
+    const val EXTRA_ACTION = "EXTRA_ACTION"
 
     fun createNotification(context: Context): Notification? {
         createNotificationChannel(context)
 
         val notificationLayout = RemoteViews(BuildConfig.APPLICATION_ID, R.layout.view_notification)
 
-        val intent = Intent(context, RadioService::class.java)
-        val pendingIntent = PendingIntent.getService(context, 12, intent, 0)
-        notificationLayout.setOnClickPendingIntent(R.id.imgPlay, pendingIntent)
+        notificationLayout.setOnClickPendingIntent(
+            R.id.imgPlay,
+            getPendingIntentToService(context, NotificationClickTypes.PLAY)
+        )
+        notificationLayout.setOnClickPendingIntent(
+            R.id.imgPrev,
+            getPendingIntentToService(context, NotificationClickTypes.PREV)
+        )
+        notificationLayout.setOnClickPendingIntent(
+            R.id.imgNext,
+            getPendingIntentToService(context, NotificationClickTypes.NEXT)
+        )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_baseline_sports_football_24)
@@ -35,6 +45,16 @@ object NotificationUtils {
 
         return builder.build()
     }
+
+    private fun getPendingIntentToService(context: Context, type: NotificationClickTypes) =
+        PendingIntent.getService(
+            context,
+            type.ordinal,
+            Intent(context, RadioService::class.java).apply {
+                action = type.name
+            },
+            0
+        )
 
     private fun createNotificationChannel(context: Context) {
         // Create the NotificationChannel, but only on API 26+ because
