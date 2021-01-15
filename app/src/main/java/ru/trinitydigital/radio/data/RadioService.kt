@@ -82,10 +82,6 @@ class RadioService : Service() {
         return super.onUnbind(intent)
     }
 
-    fun setupViewModel(viewModel: MainViewModel) {
-        this.viewModel = viewModel
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         player.pause()
