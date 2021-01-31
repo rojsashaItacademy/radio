@@ -60,5 +60,6 @@ object Resources {
 
 data class RadioStations(
     val name: String,
-    val station: String
+    val station: String,
+    var isActivated: Boolean = false
 )
